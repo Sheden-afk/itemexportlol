@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10151d">
+<title>LoL — предметы, руны, заклинания и чемпионы v12</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
+<style>
+:root{color-scheme:dark;--bg:#0c1118;--panel:#141c27;--line:#283647;--text:#eef2f7;--muted:#99a7b8;--gold:#e5c57e;--blue:#79c9ed;--green:#8ed9b0;--orange:#ffb078;--purple:#c4a5ff}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -25%,#27384a 0,#111a25 42%,var(--bg) 78%);color:var(--text);font:15px/1.5 Inter,Segoe UI,Arial,sans-serif}
+main{max-width:1440px;margin:auto;padding:28px 28px 60px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:21px}
+.switch{display:flex;gap:7px;padding:5px;border:1px solid #2d3a4b;background:#101720;border-radius:13px;flex-wrap:wrap}
+.switch button,.filter{border:0;border-radius:9px;background:transparent;color:#aebaca;padding:9px 17px;font:600 14px/1.2 Inter,Segoe UI,Arial,sans-serif;cursor:pointer;transition:.18s}
+.switch button.active{background:#293747;color:#fff;box-shadow:inset 0 0 0 1px #52657a}.switch button{white-space:nowrap}
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.search{position:relative;flex:1;min-width:220px}.search:before{content:'⌕';position:absolute;left:14px;top:7px;color:#8293a6;font-size:23px}.search input{width:100%;height:44px;padding:0 14px 0 42px;background:#121a24;border:1px solid var(--line);border-radius:10px;color:var(--text);font:inherit;outline:none}.search input:focus{border-color:#7894ae}
+select{height:44px;padding:0 34px 0 13px;background:#121a24;border:1px solid var(--line);border-radius:10px;color:var(--text);font:inherit}
+.action{height:44px;padding:0 16px;border:1px solid #6f6045;border-radius:10px;background:#26271f;color:#f1dca9;font:650 13px/1.2 Inter,Segoe UI,Arial,sans-serif;cursor:pointer;transition:.18s;white-space:nowrap}.action:hover{background:#383528;border-color:#b89a61}.action:disabled{opacity:.55;cursor:wait}
+.filters{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 15px}.filter{border:1px solid #293849;background:#131c27;padding:7px 12px;font-size:12px}.filter.active{border-color:#8a7654;background:#302b21;color:#f0dba9}.filter:hover{border-color:#71879f;color:#fff}
+.status{min-height:16px;margin:0 0 14px;color:#91a0b2;font-size:11px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px}
+.tile{position:relative;min-width:0;min-height:154px;padding:15px 11px 12px;border:1px solid #304256;border-radius:14px;background:radial-gradient(ellipse at 50% 0%,#2a3c50 0%,transparent 65%),linear-gradient(145deg,#1b2938,#101822 78%);color:var(--text);text-align:center;cursor:pointer;overflow:hidden;transition:transform .18s,border-color .18s,box-shadow .18s}.tile:after{content:'';position:absolute;inset:5px;border:1px solid #ffffff08;border-radius:10px;pointer-events:none}
+.tile:before{content:'';position:absolute;top:0;left:18%;right:18%;height:2px;background:linear-gradient(90deg,transparent,#e1c17b,transparent);opacity:.85}.tile:hover{transform:translateY(-4px);border-color:#b0925d;box-shadow:0 13px 30px #0009,0 0 20px #b0925d17}
+.tile img{display:block;width:70px;height:70px;object-fit:contain;margin:0 auto 10px;filter:drop-shadow(0 7px 12px #000a)}.tile .title{display:block;font-size:13px;font-weight:700;line-height:1.3}.tile .sub{display:block;margin-top:6px;color:#d6b979;font-size:11px;line-height:1.35}.tile.rune img{width:76px;height:76px;object-fit:contain;filter:drop-shadow(0 0 9px #9c8b642b)}
+.empty{grid-column:1/-1;padding:48px 15px;text-align:center;color:#9caaba;border:1px dashed #344355;border-radius:13px}
+.overlay{position:fixed;inset:0;z-index:10;display:none;align-items:center;justify-content:center;padding:18px;background:#05080ddc;backdrop-filter:blur(8px)}.overlay.open{display:flex}
+.modal{position:relative;width:min(1040px,100%);max-height:90vh;overflow:auto;border:1px solid #405268;border-radius:17px;background:linear-gradient(145deg,#1b2938,#111923 75%);box-shadow:0 25px 90px #000b}
+.close{position:absolute;right:13px;top:13px;width:34px;height:34px;border:1px solid #36485d;border-radius:9px;background:#121b26;color:#dce5ef;font-size:21px;cursor:pointer}
+.modal-head{display:flex;gap:19px;align-items:center;padding:25px 58px 22px 25px;border-bottom:1px solid #29394a}.modal-head img{width:112px;height:112px;object-fit:contain;filter:drop-shadow(0 6px 12px #0008)}.modal-head h2{margin:0 0 7px;font:600 32px/1.15 Georgia,serif;color:#f5f3ee}.modal-sub{color:var(--gold);font-size:14px}.modal-body{padding:25px 32px 30px}.description{color:#e0e7ef;font-size:17px;line-height:1.85;overflow-wrap:anywhere}.description br{display:block;content:'';margin:5px 0}.description .hl-gold{color:#f2cf80;font-weight:700}.description .hl-blue{color:#85d8fa;font-weight:700}.description .hl-green{color:#97e2b3;font-weight:700}.description .hl-orange{color:#ffb17a;font-weight:700}.description .hl-purple{color:#c9adff;font-weight:700}.description .hl-muted{color:#a6b3c3;font-style:italic}.description .hl-custom{font-weight:800}.description b,.description strong{color:#fff0c9;text-shadow:0 0 12px #e5c57e25}.description li{margin-left:19px}.stats{display:flex;flex-wrap:wrap;gap:9px;margin-top:23px}.stat{display:inline-flex;align-items:center;gap:9px;padding:8px 12px;border:1px solid #3a5268;border-radius:9px;background:linear-gradient(135deg,#1b2a39,#15212e);font-size:13px;box-shadow:inset 0 1px #ffffff08}.stat-label{color:#c4cfdb}.stat-value{font-size:15px;font-weight:800;color:#f2cf80;text-shadow:0 0 12px #e5c57e35}.modal-actions{padding:0 26px 24px}.export-status{min-height:17px;margin:0 0 12px;color:#a7b6c7;font-size:11px}
+.champion-bar{display:flex;align-items:center;gap:13px;margin:4px 0 16px;padding:11px 13px;border:1px solid #34475c;border-radius:12px;background:linear-gradient(110deg,#1c2a3a,#111923)}
+.champion-bar[hidden]{display:none}.champion-bar img{width:52px;height:52px;border-radius:9px;border:1px solid #5e7187}.champion-bar .champion-name{font:600 22px Georgia,serif;color:#f2f3f5}.champion-bar .champion-hint{font-size:11px;color:#9eacbd}.champion-bar .back{margin-left:auto;border:1px solid #52677e;background:#172331;color:#d8e7f5;border-radius:9px;padding:9px 13px;cursor:pointer;font-weight:650}
+.tile.champion-tile img{width:86px;height:86px;border-radius:13px;border:1px solid #53687c;object-fit:cover}.tile.ability-tile img{width:78px;height:78px;border-radius:10px;border:1px solid #607488;object-fit:cover}.tile .key-badge{position:absolute;top:9px;left:10px;color:#e7d29f;font-size:10px;font-weight:800;letter-spacing:.12em}
+.ability-video-wrap{position:relative;width:min(100%,960px);margin:0 auto 28px;padding:12px;border:1px solid rgba(133,177,207,.62);border-radius:19px;background:linear-gradient(145deg,#263b50 0%,#172637 48%,#101a26 100%);box-shadow:inset 0 1px rgba(255,255,255,.08),0 18px 42px rgba(0,0,0,.42);overflow:hidden;text-align:center}.ability-video-wrap:before{content:'';position:absolute;inset:6px;border:1px solid rgba(135,194,226,.2);border-radius:13px;pointer-events:none}.ability-video-wrap[hidden],.ability-stats[hidden]{display:none}.ability-video-wrap video{position:relative;z-index:1;display:block;width:100%;max-height:540px;min-height:220px;margin:0 auto;object-fit:contain;background:radial-gradient(ellipse at 50% 45%,#26394b 0%,#111b27 74%);border:1px solid rgba(137,175,202,.35);border-radius:11px;outline:0;box-shadow:inset 0 0 28px rgba(0,0,0,.32)}.ability-stats{display:flex;gap:9px;flex-wrap:wrap;margin:21px 0 0}.ability-stat{padding:8px 12px;border:0;border-radius:8px;background:linear-gradient(135deg,#1a2b3b,#13202d);min-width:125px}.ability-stat small{display:block;color:#9db0c4;font-size:10px;letter-spacing:.08em;text-transform:uppercase}.ability-stat strong{display:block;color:#f0d08a;font-size:15px;margin-top:2px}.modal-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.modal-actions .export-status{flex:1 0 100%}
+.modal.ability-mode{width:min(1120px,100%)}.modal.ability-mode .modal-head{display:block;text-align:center;padding:27px 55px 16px;border-bottom:0}.modal.ability-mode .modal-head img{display:none}.modal.ability-mode .modal-head h2{font-size:34px;margin:0 0 8px}.modal.ability-mode .modal-sub{font-size:13px;color:#9fcbe0}.modal.ability-mode .modal-body{padding:0 42px 30px}.modal.ability-mode .description{max-width:930px;margin:0 auto;color:#e5eaf0;font-size:17px;line-height:1.8}.modal.ability-mode .close{z-index:2}
+@media(max-width:650px){.modal.ability-mode .modal-head{padding:21px 48px 13px 17px}.modal.ability-mode .modal-head h2{font-size:25px}.modal.ability-mode .modal-body{padding:0 17px 22px}.ability-video-wrap{margin-bottom:18px;padding:8px;border-radius:14px}.ability-video-wrap:before{inset:4px;border-radius:10px}.ability-video-wrap video{max-height:340px;min-height:160px;border-radius:8px}.modal.ability-mode .description{font-size:15px}}
+@media(max-width:650px){main{padding:17px 14px 40px}.top{align-items:stretch}.switch{width:100%}.switch button{flex:1}.controls{gap:8px}.controls .action{width:100%}.grid{grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}.tile{padding:12px 8px;min-height:145px}.tile img{width:62px;height:62px}.modal-head{padding:20px 48px 18px 17px}.modal-head img{width:72px;height:72px}.modal-head h2{font-size:22px}.modal-body{padding:18px}.modal-actions{padding:0 18px 20px}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <nav class="switch" id="mainTabs" aria-label="Тип контента">
+      <button class="active" data-kind="items">Предметы</button>
+      <button data-kind="runes">Руны</button>
+      <button data-kind="spells">Заклинания</button>
+      <button data-kind="champions">Чемпионы</button>
+    </nav>
+  </div>
+  <div class="controls">
+    <label class="search"><input id="search" type="search" placeholder="Поиск…" autocomplete="off"></label>
+    <select id="sort" aria-label="Сортировка"><option value="name">По названию</option><option value="price-desc">Сначала дорогие</option><option value="price-asc">Сначала дешёвые</option></select>
+    <button class="action" id="downloadAll">Скачать все предметы · ZIP</button>
+  </div>
+  <nav class="filters" id="filters" aria-label="Фильтр"></nav>
+  <div id="championBar" class="champion-bar" hidden></div>
+  <p class="status" id="status">Загрузка…</p>
+  <section class="grid" id="grid" aria-live="polite"></section>
+</main>
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="modalName">
+  <article class="modal" id="modal">
+    <button class="close" id="close" aria-label="Закрыть">×</button>
+    <div class="modal-head"><img id="modalIcon" alt=""><div><h2 id="modalName"></h2><div class="modal-sub" id="modalSub"></div></div></div>
+    <div class="modal-body">
+      <div id="modalVideoWrap" class="ability-video-wrap" hidden>
+        <video id="modalVideo" controls muted autoplay playsinline loop preload="metadata"></video>
+      </div>
+      <div class="description" id="modalDescription"></div>
+      <div id="abilityStats" class="ability-stats" hidden></div>
+    </div>
+    <div class="modal-actions"><p class="export-status" id="singleStatus"></p><button class="action" id="downloadOne">Скачать карточку PNG</button><button class="action" id="downloadVideo" hidden>Скачать исходное видео WebM</button><button class="action" id="downloadAbilityCard" hidden>Скачать видео-карточку WebM</button></div>
+  </article>
+</div>
+<script>
+(() => {
+  const BASE='https://ddragon.leagueoflegends.com', LOCALE='ru_RU';
+  const $=id=>document.getElementById(id);
+  const state={kind:'items',filter:'all',items:[],runes:[],spells:[],champions:[],selectedChampion:null,championAbilities:[],championCache:new Map(),version:'',current:null};
+  const statLabels={
+    FlatHPPoolMod:['Здоровье',' HP','#96dfb2'],FlatMPPoolMod:['Мана',' MP','#83d7f6'],
+    FlatPhysicalDamageMod:['Сила атаки','','#ffad78'],PercentAttackSpeedMod:['Скорость атаки','%','#83d7f6'],
+    FlatArmorMod:['Броня','','#83d7f6'],FlatSpellBlockMod:['Сопротивление магии','','#c2a0ff'],
+    FlatCritChanceMod:['Шанс крит. удара','%','#f1ce7f'],PercentMovementSpeedMod:['Скорость передвижения','%','#83d7f6'],
+    FlatMovementSpeedMod:['Скорость передвижения','','#83d7f6'],PercentLifeStealMod:['Вампиризм','%','#96dfb2'],PercentHPPoolMod:['Здоровье','%','#96dfb2']
+  };
+  const categories=[['all','Все'],['attack','Атака'],['magic','Магия'],['defense','Защита'],['movement','Передвижение'],['consumable','Расходники']];
+  const spellCategories=[['all','Все заклинания'],['movement','Передвижение'],['defense','Защита'],['combat','Атака'],['jungle','Лес']];
+  // Только заклинания призывателя, используемые в классическом Ущелье призывателей.
+  const CLASSIC_SPELL_IDS=new Set(['SummonerBarrier','SummonerBoost','SummonerDot','SummonerExhaust','SummonerFlash','SummonerHaste','SummonerHeal','SummonerSmite','SummonerTeleport']);
+  const tagColors={stats:'blue',attention:'gold',active:'orange',passive:'green',rules:'muted',speed:'blue',physicaldamage:'orange',magicdamage:'purple',truedamage:'orange',healing:'green',shield:'blue',scalead:'orange',scaleap:'purple',statgood:'green',scalelevel:'gold',status:'gold',keywordmajor:'gold',keywordminor:'purple',spellname:'gold',scalearmor:'blue',scalemr:'purple'};
+  function itemCategory(item){const t=item.tags||[];if(t.includes('Boots'))return'movement';if(t.includes('Consumable')||t.includes('Trinket'))return'consumable';if(t.some(x=>['SpellDamage','Mana','ManaRegen'].includes(x)))return'magic';if(t.some(x=>['Health','HealthRegen','Armor','SpellBlock'].includes(x)))return'defense';if(t.some(x=>['Damage','CriticalStrike','AttackSpeed','LifeSteal'].includes(x)))return'attack';return'all'}
+  // В Data Dragon рядом с обычными предметами могут встречаться варианты для других режимов,
+  // скрытые предметы и служебные копии. Поле inStore по умолчанию часто не указано,
+  // поэтому отбрасываем только явное false и оставляем магазинные предметы Ущелья.
+  function isCurrentRiftItem(item){
+    const id=String(item.__id||'');
+    if(/^(22|32)\d{4}$/.test(id))return false; // дополнительные ID Arena/ARAM/Swarm
+    return item.maps?.['11']===true && item.gold?.purchasable===true &&
+      item.inStore!==false && !item.hideFromAll && !item.requiredChampion &&
+      Boolean(item.name?.trim()) && Boolean(item.image?.full);
+  }
+  function normalizedItemName(name){return String(name||'').normalize('NFKC').trim().replace(/\s+/g,' ').toLocaleLowerCase('ru')}
+  function itemPriority(item){
+    let score=0;
+    if(item.inStore===true)score+=1000;
+    if(item.maps?.['11']===true)score+=500;
+    if(item.gold?.purchasable===true)score+=300;
+    if(!item.hideFromAll)score+=100;
+    if(!item.requiredChampion)score+=30;
+    if(!item.requiredAlly)score+=20;
+    if(item.image?.full)score+=10;
+    return score;
+  }
+  function uniqueItems(list){
+    const byName=new Map();
+    for(const item of list){
+      const key=normalizedItemName(item.name);if(!key)continue;
+      const old=byName.get(key);
+      if(!old || itemPriority(item)>itemPriority(old) ||
+        (itemPriority(item)===itemPriority(old) && Number(item.__id)<Number(old.__id))){byName.set(key,item)}
+    }
+    return [...byName.values()].sort((a,b)=>a.name.localeCompare(b.name,'ru'));
+  }
+  function itemStats(item){const out=[];Object.entries(item.stats||{}).forEach(([key,value])=>{const def=statLabels[key];if(!def||!Number(value))return;let n=Number(value);if(key.startsWith('Percent'))n*=100;out.push({label:def[0],value:`${n>=0?'+':''}${Number(n.toFixed(1))}${def[1]}`,color:def[2]})});return out}
+  function colorClass(node){const tag=(node.tagName||'').toLowerCase();if(tag==='font'){const c=node.getAttribute('color')||'';if(/^#[0-9a-f]{3,8}$/i.test(c))return 'custom:'+c}return tagColors[tag]||''}
+  function normalizeDescription(html){
+    const source=String(html||'Описание отсутствует.');
+    const verbs='наносят|наносит|наносил(?:а|о)?|наносили|нанесут|нанесёт|нанесет|нанёс|нанесла';
+    const tags='(?:<[^>]+>\s*)*', closes='(?:\s*<\/[^>]+>)*';
+    const re=new RegExp(`(${verbs})\\s*${tags}0${closes}\\s*(?:(?:<[^>]+>\\s*)*(?:ед\\.?|единиц(?:ы)?)${closes}\\s*)?${tags}(магического|физического|истинного)${closes}\\s*урона`,'giu');
+    const adjectives={магического:['magicDamage','магический'],физического:['physicalDamage','физический'],истинного:['trueDamage','истинный']};
+    return source.replace(re,(_match,verb,kind)=>`${verb} <${adjectives[kind.toLowerCase()][0]}>${adjectives[kind.toLowerCase()][1]} урон</${adjectives[kind.toLowerCase()][0]}>`);
+  }
+  function automaticHighlight(text){
+    const re=/(\d+(?:[.,]\d+)?\s*(?:%|сек\.?|секунд[\p{L}]*|ед\.?)?|(?:магическ|физическ|истинн)[\p{L}]*\s+урон[\p{L}]*|скорост[\p{L}]*\s+(?:передвижен[\p{L}]*|атак[\p{L}]*)|здоровь[\p{L}]*|(?:лечени|исцелени)[\p{L}]*|щит[\p{L}]*|критическ[\p{L}]*)/giu;
+    const pieces=[];let last=0,m;
+    while((m=re.exec(text))){if(m.index>last)pieces.push({text:text.slice(last,m.index)});const v=m[0].toLowerCase();let color='#f1ce7f';
+      if(v.includes('магическ'))color='#c2a0ff';else if(v.includes('физическ')||v.includes('истинн'))color='#ffad78';else if(v.startsWith('скорост'))color='#83d7f6';else if(v.startsWith('здоров')||v.startsWith('лечени')||v.startsWith('исцелени'))color='#96dfb2';else if(v.startsWith('щит'))color='#83d7f6';
+      pieces.push({text:m[0],color});last=re.lastIndex;
+    }
+    if(last<text.length)pieces.push({text:text.slice(last)});return pieces;
+  }
+  function safeDescription(html){
+    const normalized=normalizeDescription(html);
+    const doc=new DOMParser().parseFromString(`<div>${normalized}</div>`,'text/html');
+    const root=doc.body.firstElementChild;
+    function copy(node){
+      if(node.nodeType===Node.TEXT_NODE){const frag=doc.createDocumentFragment();automaticHighlight(node.nodeValue).forEach(part=>{if(!part.color)frag.append(doc.createTextNode(part.text));else{const mark=doc.createElement('span');mark.className='hl-custom';mark.style.color=part.color;mark.textContent=part.text;frag.append(mark)}});return frag;}
+      if(node.nodeType!==Node.ELEMENT_NODE)return doc.createDocumentFragment();
+      const tag=node.tagName.toLowerCase();
+      if(tag==='br')return doc.createElement('br');
+      if(tag==='li'){const box=doc.createElement('div');box.textContent='• ';node.childNodes.forEach(n=>box.append(copy(n)));return box}
+      const span=doc.createElement(['b','strong','i','em'].includes(tag)?tag:'span');
+      const cls=colorClass(node);if(cls.startsWith('custom:'))span.style.color=cls.slice(7);else if(cls)span.className='hl-'+cls;
+      node.childNodes.forEach(n=>span.append(copy(n)));return span;
+    }
+    const out=doc.createElement('div');root.childNodes.forEach(n=>out.append(copy(n)));return out.innerHTML;
+  }
+  function entryImage(entry){if(state.kind==='items')return `${BASE}/cdn/${state.version}/img/item/${entry.image.full}`;if(state.kind==='runes')return `${BASE}/cdn/img/${entry.icon}`;if(state.kind==='champions')return entry.__kind==='champion'?`${BASE}/cdn/${state.version}/img/champion/${entry.image.full}`:`${BASE}/cdn/${state.version}/img/spell/${entry.image.full}`;return `${BASE}/cdn/${state.version}/img/spell/${entry.image.full}`}
+  function spellCategory(spell){const id=spell.__id;if(['SummonerFlash','SummonerTeleport','SummonerHaste'].includes(id))return'movement';if(['SummonerHeal','SummonerBarrier','SummonerBoost'].includes(id))return'defense';if(id==='SummonerSmite')return'jungle';return'combat'}
+  function currentData(){return state.kind==='items'?state.items:state.kind==='runes'?state.runes:state.kind==='spells'?state.spells:state.selectedChampion?state.championAbilities:state.champions}
+  function renderFilters(){
+    const wrap=$('filters');wrap.innerHTML='';
+    const opts=state.kind==='items'?categories:state.kind==='runes'?[['all','Все руны'],...state.runeStyles.map(s=>[String(s.id),s.name])]:state.kind==='spells'?spellCategories:[];
+    opts.forEach(([value,label])=>{const b=document.createElement('button');b.className='filter'+(state.filter===value?' active':'');b.dataset.filter=value;b.textContent=label;wrap.append(b)});
+    wrap.hidden=state.kind==='champions';
+    $('sort').style.display=state.kind==='items'?'':'none';
+    const isChamp=state.kind==='champions';
+    $('downloadAll').disabled=isChamp&&!state.selectedChampion;
+    $('downloadAll').textContent=state.kind==='items'?'Скачать все предметы · ZIP':state.kind==='runes'?'Скачать все руны · ZIP':state.kind==='spells'?'Скачать все заклинания · ZIP':state.selectedChampion?`Скачать способности ${state.selectedChampion.name} · ZIP`:'Сначала выбери чемпиона';
+    $('search').placeholder=state.kind==='items'?'Поиск предмета…':state.kind==='runes'?'Поиск руны…':state.kind==='spells'?'Поиск заклинания…':state.selectedChampion?'Поиск способности…':'Поиск чемпиона…';
+    const bar=$('championBar');bar.hidden=!(isChamp&&state.selectedChampion);
+    if(isChamp&&state.selectedChampion){
+      bar.innerHTML='';
+      const img=document.createElement('img');img.src=`${BASE}/cdn/${state.version}/img/champion/${state.selectedChampion.image.full}`;img.alt='';
+      const info=document.createElement('div');const name=document.createElement('div');name.className='champion-name';name.textContent=state.selectedChampion.name;const hint=document.createElement('div');hint.className='champion-hint';hint.textContent='Пассивная способность и четыре умения';info.append(name,hint);
+      const back=document.createElement('button');back.className='back';back.textContent='← Все чемпионы';back.addEventListener('click',()=>{state.selectedChampion=null;state.championAbilities=[];$('search').value='';renderFilters();render()});bar.append(img,info,back);
+    }
+  }
+  function render(){
+    const q=$('search').value.trim().toLocaleLowerCase('ru');let data=currentData();
+    if(state.kind==='items')data=data.filter(x=>(state.filter==='all'||itemCategory(x)===state.filter)&&(!q||x.name.toLocaleLowerCase('ru').includes(q)));
+    else if(state.kind==='runes')data=data.filter(x=>(state.filter==='all'||String(x.styleId)===state.filter)&&(!q||x.name.toLocaleLowerCase('ru').includes(q)||x.styleName.toLocaleLowerCase('ru').includes(q)));
+    else if(state.kind==='spells')data=data.filter(x=>(state.filter==='all'||spellCategory(x)===state.filter)&&(!q||x.name.toLocaleLowerCase('ru').includes(q)));
+    else if(state.kind==='champions')data=data.filter(x=>!q||x.name.toLocaleLowerCase('ru').includes(q)||x.title.toLocaleLowerCase('ru').includes(q));
+    if(state.kind==='items'){const sort=$('sort').value;data.sort((a,b)=>sort==='name'?a.name.localeCompare(b.name,'ru'):sort==='price-desc'?(b.gold.total-a.gold.total):(a.gold.total-b.gold.total))}
+    const grid=$('grid');grid.innerHTML='';
+    if(!data.length){grid.innerHTML='<div class="empty">Ничего не найдено</div>'}
+    data.forEach(entry=>{
+      const btn=document.createElement('button');btn.type='button';btn.className='tile'+(state.kind==='runes'?' rune':'')+(state.kind==='champions'&&!state.selectedChampion?' champion-tile':'')+(state.kind==='champions'&&state.selectedChampion?' ability-tile':'');
+      const img=document.createElement('img');img.loading='lazy';img.src=entryImage(entry);img.alt=entry.name;
+      const title=document.createElement('span');title.className='title';title.textContent=entry.name;
+      const sub=document.createElement('span');sub.className='sub';
+      if(state.kind==='items')sub.textContent=`${(entry.gold.total||0).toLocaleString('ru-RU')} золота`;
+      else if(state.kind==='runes')sub.textContent=entry.styleName;
+      else if(state.kind==='spells')sub.textContent=`${entry.cooldownBurn||'—'} сек. перезарядки`;
+      else if(!state.selectedChampion)sub.textContent=entry.title||'';
+      else sub.textContent=entry.__slot==='P'?'Пассивная способность':`${entry.__slot} · Способность`;
+      if(state.kind==='champions'&&state.selectedChampion){const key=document.createElement('span');key.className='key-badge';key.textContent=entry.__slot==='P'?'ПАССИВКА':entry.__slot;btn.append(key)}
+      btn.append(img,title,sub);btn.addEventListener('click',()=>{if(state.kind==='champions'&&!state.selectedChampion)loadChampion(entry);else openEntry(entry)});grid.append(btn);
+    });
+    $('status').textContent=state.kind==='champions'?(state.selectedChampion?`${data.length} способностей · ${state.selectedChampion.name}`:`${data.length} чемпионов`):`${data.length} / ${currentData().length}`;
+  }
+  async function loadChampion(champion){
+    state.selectedChampion=champion;state.championAbilities=[];$('search').value='';renderFilters();
+    $('status').textContent=`Загрузка способностей: ${champion.name}…`;$('grid').innerHTML='<div class="empty">Получаем описания, параметры и видео способностей…</div>';
+    try{
+      let detail,community;
+      if(state.championCache.has(champion.id)){({detail,community}=state.championCache.get(champion.id))}
+      else{
+        const [d,c]=await Promise.allSettled([
+          fetch(`${BASE}/cdn/${state.version}/data/${LOCALE}/champion/${champion.id}.json`).then(r=>{if(!r.ok)throw Error('Описание чемпиона недоступно');return r.json()}),
+          fetch(`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champions/${champion.key}.json`).then(r=>{if(!r.ok)throw Error('Данные видео недоступны');return r.json()})
+        ]);
+        if(d.status!=='fulfilled')throw d.reason;
+        detail=d.value.data[champion.id];community=c.status==='fulfilled'?c.value:null;
+        state.championCache.set(champion.id,{detail,community});
+      }
+      const communityPassive=community?.passive||{};
+      const abilities=[{...detail.passive,__kind:'champAbility',__slot:'P',__label:'Пассивная способность',__videoPath:communityPassive.abilityVideoPath,__videoPoster:communityPassive.abilityVideoImagePath,__dynamic:communityPassive.dynamicDescription||'',__resource:'—',__cooldown:'—',__range:'—',__tooltip:detail.passive.description}];
+      const keys=['Q','W','E','R'];
+      detail.spells.forEach((spell,i)=>{
+        const slot=keys[i]||String(i+1),communitySpell=(community?.spells||[]).find(x=>String(x.spellKey||'').toUpperCase()===slot)||community?.spells?.[i]||{};
+        const tooltip=resolveChampionTooltip(spell);
+        abilities.push({...spell,__kind:'champAbility',__slot:slot,__label:`Способность ${slot}`,__videoPath:communitySpell.abilityVideoPath,__videoPoster:communitySpell.abilityVideoImagePath,__dynamic:communitySpell.dynamicDescription||'',__resource:resolveSpellResource(spell),__cooldown:spell.cooldownBurn&&spell.cooldownBurn!=='0'?`${spell.cooldownBurn} сек.`:'—',__range:spell.rangeBurn&&spell.rangeBurn!=='0'?spell.rangeBurn:'—',__tooltip:tooltip});
+      });
+      state.championAbilities=abilities;render();
+      if(!community)$('status').textContent=`Описания и параметры загружены · видео-превью от CommunityDragon сейчас недоступны`;
+    }catch(e){state.selectedChampion=null;state.championAbilities=[];renderFilters();render();$('status').textContent=`Не удалось загрузить чемпиона: ${e.message}`}
+  }
+  function resolveSpellResource(spell){
+    let value=String(spell.resource||'').replace(/\{\{\s*cost\s*\}\}/gi,spell.costBurn&&spell.costBurn!=='0'?spell.costBurn:'');
+    value=value.replace(/\s{2,}/g,' ').trim();
+    if(!value||/^no cost$/i.test(value)||/^0\s*(mana|energy)$/i.test(value))return 'Без затрат';
+    return value;
+  }
+  function cleanUnresolvedSpellText(input){
+    let text=String(input||'');
+    // HTML-пробелы из локализованных подсказок превращаем в обычные пробелы.
+    text=text.replace(/&nbsp;|&#0*160;|&#x0*a0;/gi,' ');
+    // Служебный хвост Riot нужен игровому клиенту, но не зрителю карточки.
+    text=text.replace(/\{\{\s*spellmodifierdescriptionappend\s*\}\}/gi,'');
+    // Неизвестное число урона не подменяем нулём: оставляем понятный тип урона.
+    const damageCases={магического:'магический урон',физического:'физический урон',истинного:'истинный урон'};
+    text=text.replace(/\{\{\s*(?:totaldamage|initialdamage|bonusdamage|mindamagetotal|maxdamagetotal|totaldamagetooltip)\s*\}\}[\s\u00a0]*(?:ед\.?[\s\u00a0]*)?(магического|физического|истинного)[\s\u00a0]+урона/giu,(_m,kind)=>damageCases[kind.toLowerCase()]||'урон');
+    text=text.replace(/дополнительного\s+(магический|физический|истинный)\s+урон/giu,'дополнительный $1 урон');
+    text=text.replace(/\{\{\s*(?:totalshield|shieldamount|shieldvalue)\s*\}\}[\s\u00a0]*(?:ед\.?[\s\u00a0]*)?щита/giu,'щит');
+    text=text.replace(/\{\{\s*(?:totalheal|baseheal|totalhealing)\s*\}\}[\s\u00a0]*(?:ед\.?[\s\u00a0]*)?здоровья/giu,'здоровье');
+    // Для процентов скорости сохраняем смысл эффекта, опуская неизвестную величину.
+    text=text.replace(/\{\{\s*[^{}]+?\s*\}\}[\s\u00a0]*%[\s\u00a0]*(скорости передвижения|скорости атаки|скорости)/giu,(_m,stat)=>`бонус к ${stat.toLowerCase()}`);
+    text=text.replace(/\{\{\s*[^{}]+?\s*\}\}[\s\u00a0]*%[\s\u00a0]*(замедления)/giu,'замедление');
+    // Убираем оставшиеся нераскрытые значения и прилегающие к ним единицы.
+    text=text.replace(/\{\{\s*[^{}]+?\s*\}\}[\s\u00a0]*%/g,'');
+    text=text.replace(/\{\{\s*[^{}]+?\s*\}\}[\s\u00a0]*(?:ед\.?|единиц(?:а|ы)?|сек(?:унд[аыу]?)?\.?|мс|метр(?:а|ов)?)/giu,'');
+    text=text.replace(/\{\{\s*[^{}]*\s*\}\}/g,'');
+    text=text.replace(/\s+/g,' ')
+      .replace(/(^|[\s>])на\s+на(?=[\s<]|$)/giu,'$1на')
+      .replace(/\s+([,.;!?])/g,'$1')
+      .replace(/([,;:])(?=\S)/g,'$1 ')
+      .replace(/(^|[\s>])на(?=\s*(?:<|[,.;!?]|$))/giu,'$1')
+      .replace(/\s{2,}/g,' ')
+      .trim();
+    return text;
+  }
+  function resolveChampionTooltip(spell){
+    let text=spell.tooltip||spell.description||'Описание отсутствует.';
+    text=text.replace(/\{\{\s*e(\d+)\s*\}\}/gi,(_m,n)=>spell.effectBurn?.[Number(n)]||'');
+    text=text.replace(/\{\{\s*cost\s*\}\}/gi,spell.costBurn&&spell.costBurn!=='0'?spell.costBurn:'');
+    text=text.replace(/\{\{\s*cooldown\s*\}\}/gi,spell.cooldownBurn||'');
+    text=text.replace(/\{\{\s*(a|f)(\d+)\s*\}\}/gi,(_m,prefix,n)=>{
+      const key=prefix.toLowerCase()+n,variable=(spell.vars||[]).find(v=>String(v.key).toLowerCase()===key);if(!variable)return'';
+      const values=Array.isArray(variable.coeff)?variable.coeff:[];if(!values.length)return'';
+      const val=Number(values[0]);if(!Number.isFinite(val))return'';
+      const link=String(variable.link||'').toLowerCase();
+      if(['spelldamage','attackdamage','bonusattackdamage','armor','bonushealth','health','maxhealth'].includes(link))return `+${Math.round(val*100)}%`;
+      return val.toLocaleString('ru-RU');
+    });
+    text=cleanUnresolvedSpellText(text);
+    return text.replace(/<br\s*\/?>((?:\s*<br\s*\/?>)+)/gi,'<br><br>');
+  }
+  function openEntry(entry){
+    state.current=entry;$('singleStatus').textContent='';
+    $('modalIcon').src=entryImage(entry);$('modalIcon').alt=entry.name;$('modalName').textContent=entry.name;
+    const isAbility=state.kind==='champions'&&entry.__kind==='champAbility';
+    $('modal').classList.toggle('ability-mode',isAbility);
+    const desc=state.kind==='runes'?(entry.longDesc||entry.shortDesc):isAbility?entry.__tooltip:entry.description;
+    $('modalDescription').innerHTML=safeDescription(desc);
+    $('modalVideoWrap').hidden=!isAbility||!entry.__videoPath;
+    $('modalVideo').pause();$('modalVideo').removeAttribute('src');$('modalVideo').removeAttribute('poster');
+    $('abilityStats').innerHTML='';$('abilityStats').hidden=!isAbility;
+    $('downloadVideo').hidden=!isAbility||!entry.__videoPath;
+    $('downloadAbilityCard').hidden=!isAbility||!entry.__videoPath;
+    $('downloadOne').textContent=isAbility?'Скачать карточку PNG · статично':'Скачать карточку PNG';
+    if(isAbility){
+      const videoUrl=`https://d28xe8vt774jo5.cloudfront.net/${entry.__videoPath}`;
+      $('modalVideo').crossOrigin='anonymous';
+      $('modalVideo').src=videoUrl;
+      $('modalVideo').load();
+      $('modalVideo').play().catch(()=>{});
+      if(entry.__videoPoster)$('modalVideo').poster=`https://d28xe8vt774jo5.cloudfront.net/${entry.__videoPoster}`;
+      const stats=[['Перезарядка',entry.__cooldown],['Стоимость',entry.__resource],['Дальность',entry.__range]];
+      stats.forEach(([label,value])=>{if(!value||value==='—'||value==='0'||value==='0/0/0/0/0')return;const box=document.createElement('div');box.className='ability-stat';const small=document.createElement('small');small.textContent=label;const strong=document.createElement('strong');strong.textContent=value;box.append(small,strong);$('abilityStats').append(box)});
+      $('modalSub').textContent=`${state.selectedChampion.name} · ${entry.__label}`;
+    }else{
+      $('modalSub').textContent=state.kind==='items'?`${(entry.gold.total||0).toLocaleString('ru-RU')} золота · продажа ${(entry.gold.sell||0).toLocaleString('ru-RU')}`:state.kind==='runes'?entry.styleName:`Перезарядка: ${entry.cooldownBurn||'—'} сек.`;
+    }
+    $('overlay').classList.add('open');$('close').focus();
+  }
+  function safeFilename(name){return String(name||'card').normalize('NFC').replace(/[^\p{L}\p{N}_-]+/gu,'_').replace(/^_+|_+$/g,'').slice(0,80)||'card'}
+  function rounded(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+  function richTokens(html){
+    const doc=new DOMParser().parseFromString(`<div>${normalizeDescription(html)}</div>`,'text/html'),out=[];
+    const palette={stats:'#83d7f6',attention:'#f1ce7f',active:'#ffb27c',passive:'#96dfb2',rules:'#9caabd',speed:'#83d7f6',physicaldamage:'#ffad78',magicdamage:'#c2a0ff',truedamage:'#ffad78',healing:'#96dfb2',shield:'#83d7f6',scalead:'#ffb27c',scaleap:'#c2a0ff',statgood:'#96dfb2',scalelevel:'#f1ce7f',keywordmajor:'#f1ce7f',keywordminor:'#c2a0ff',onhit:'#ffb27c',lifesteal:'#96dfb2',raritylegendary:'#f1ce7f',rarityepic:'#c2a0ff',status:'#f1ce7f',spellname:'#f1ce7f',scalearmor:'#83d7f6',scalemr:'#c2a0ff'};
+    function walk(node,style={}){
+      if(node.nodeType===Node.TEXT_NODE){automaticHighlight(node.nodeValue).forEach(part=>{const next={...style};if(part.color)next.color=part.color;if(part.color)next.bold=true;const chunks=part.text.split(/(\s+)/);chunks.forEach(t=>{if(t)out.push({...next,text:t})})});return}
+      if(node.nodeType!==Node.ELEMENT_NODE)return;
+      const tag=node.tagName.toLowerCase();if(tag==='br'){out.push({br:true});return}
+      const next={...style};if(palette[tag]){next.color=palette[tag];next.bold=true}if(tag==='b'||tag==='strong')next.bold=true;if(tag==='i'||tag==='em'||tag==='rules')next.italic=true;
+      if(tag==='font'){const c=node.getAttribute('color')||'';if(/^#[0-9a-f]{3,8}$/i.test(c))next.color=c}
+      if(tag==='li'){out.push({br:true});out.push({text:'• ',bold:true,color:'#f1ce7f'})}node.childNodes.forEach(n=>walk(n,next));if(tag==='li')out.push({br:true});
+    }
+    doc.body.firstElementChild.childNodes.forEach(n=>walk(n));return out;
+  }
+  function layoutRichText(ctx,html,maxWidth,fontSize){
+    const tokens=richTokens(html),lines=[[]];
+    let lineWidth=0;
+    const nextLine=()=>{if(lines[lines.length-1].length)lines.push([]);lineWidth=0};
+    for(const token of tokens){
+      if(token.br){lines.push([]);lineWidth=0;continue}
+      const words=token.text.match(/\s+|\S+/g)||[];
+      for(const word of words){
+        const isSpace=/^\s+$/.test(word);
+        ctx.font=`${token.italic?'italic ':''}${token.bold?'700':'400'} ${fontSize}px Arial`;
+        const width=ctx.measureText(word).width;
+        if(isSpace){if(lineWidth>0){lines[lines.length-1].push({...token,text:word,width});lineWidth+=width}continue}
+        if(lineWidth>0&&lineWidth+width>maxWidth){lines.push([]);lineWidth=0}
+        // Сверхдлинные фрагменты (например, URL или внутренний код) не должны
+        // вылезать за край: разбиваем их по символам.
+        if(width>maxWidth){
+          for(const char of word){const cw=ctx.measureText(char).width;if(lineWidth>0&&lineWidth+cw>maxWidth){lines.push([]);lineWidth=0}lines[lines.length-1].push({...token,text:char,width:cw});lineWidth+=cw}
+        }else{lines[lines.length-1].push({...token,text:word,width});lineWidth+=width}
+      }
+    }
+    while(lines.length>1&&!lines[lines.length-1].length)lines.pop();
+    return lines.length?lines:[[]];
+  }
+  function drawRichLayout(ctx,lines,x,y,lineHeight,fontSize){
+    lines.forEach((line,index)=>{
+      let cx=x;const baseline=y+index*lineHeight;
+      line.forEach(run=>{
+        ctx.font=`${run.italic?'italic ':''}${run.bold?'700':'400'} ${fontSize}px Arial`;
+        ctx.fillStyle=run.color||'#dce4ec';ctx.fillText(run.text,cx,baseline);cx+=run.width;
+      });
+    });
+  }
+  function loadImage(url){return new Promise((resolve,reject)=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>resolve(img);img.onerror=()=>reject(new Error('Не удалось загрузить изображение'));img.src=url})}
+  async function makeCardBlob(entry,kind){
+    const url=kind==='items'?`${BASE}/cdn/${state.version}/img/item/${entry.image.full}`:kind==='runes'?`${BASE}/cdn/img/${entry.icon}`:kind==='champions'?(entry.__kind==='champion'?`${BASE}/cdn/${state.version}/img/champion/${entry.image.full}`:`${BASE}/cdn/${state.version}/img/spell/${entry.image.full}`):`${BASE}/cdn/${state.version}/img/spell/${entry.image.full}`;
+    const icon=await loadImage(url);
+    const W=1920,cardX=26,cardTop=26,cardW=W-52;
+    const isRune=kind==='runes',isSpell=kind==='spells',isChampion=kind==='champions'&&entry.__kind==='champAbility';
+    const accent=isRune?'#bbaeff':isSpell?'#8ed8ff':isChampion?'#9adcf9':'#e5c57e';
+    const description=kind==='runes'?(entry.longDesc||entry.shortDesc):isChampion?entry.__tooltip:entry.description;
+    const textX=104,textWidth=1712,fontSize=34,lineHeight=52;
+    const measureCanvas=document.createElement('canvas'),measureCtx=measureCanvas.getContext('2d');
+    const meta=[];
+    if(isChampion){
+      if(entry.__cooldown&&entry.__cooldown!=='—')meta.push({text:`Перезарядка: ${entry.__cooldown}`,color:'#f1ce7f'});
+      if(entry.__resource&&entry.__resource!=='—'&&entry.__resource!=='0')meta.push({text:`Стоимость: ${entry.__resource}`,color:'#96dfb2'});
+      if(entry.__range&&entry.__range!=='—'&&entry.__range!=='0')meta.push({text:`Дальность: ${entry.__range}`,color:'#83d7f6'});
+    }
+    const metaLines=[];
+    if(meta.length){
+      let row='',rowWidth=0;measureCtx.font='700 27px Arial';
+      meta.forEach((m,i)=>{const candidate=(row?'     •     ':'')+m.text;const w=measureCtx.measureText(candidate).width;if(row&&rowWidth+w>textWidth){metaLines.push(row);row=m.text;rowWidth=measureCtx.measureText(row).width}else{row=candidate;rowWidth=measureCtx.measureText(row).width}});if(row)metaLines.push(row);
+    }
+    const lines=layoutRichText(measureCtx,description,textWidth,fontSize);
+    const metaY=308,metaLineHeight=39,descriptionY=meta.length?metaY+metaLines.length*metaLineHeight+35:315;
+    const minHeight=440,bottomPadding=70;
+    const H=Math.max(minHeight,descriptionY+Math.max(1,lines.length)*lineHeight+bottomPadding);
+    const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;
+    const ctx=canvas.getContext('2d');ctx.clearRect(0,0,W,H);
+    const cardH=H-52;const body=ctx.createLinearGradient(cardX,cardTop,cardX+cardW,cardTop+cardH);
+    body.addColorStop(0,'#223449');body.addColorStop(.48,'#142233');body.addColorStop(1,'#0d1723');
+    ctx.save();ctx.beginPath();rounded(ctx,cardX,cardTop,cardW,cardH,34);ctx.fillStyle=body;ctx.fill();
+    ctx.save();ctx.beginPath();rounded(ctx,cardX+2,cardTop+2,cardW-4,cardH-4,31);ctx.clip();
+    const halo=ctx.createRadialGradient(250,140,10,250,140,570);halo.addColorStop(0,isRune?'rgba(187,174,255,.24)':isChampion?'rgba(125,205,245,.24)':'rgba(229,197,126,.22)');halo.addColorStop(.55,isRune?'rgba(187,174,255,.07)':isChampion?'rgba(125,205,245,.07)':'rgba(229,197,126,.06)');halo.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=halo;ctx.fillRect(cardX,cardTop,cardW,Math.min(cardH,520));
+    const topSheen=ctx.createLinearGradient(0,cardTop,0,cardTop+245);topSheen.addColorStop(0,'rgba(255,255,255,.065)');topSheen.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=topSheen;ctx.fillRect(cardX,cardTop,cardW,245);ctx.restore();
+    ctx.beginPath();rounded(ctx,cardX,cardTop,cardW,cardH,34);ctx.strokeStyle='rgba(178,198,218,.48)';ctx.lineWidth=2;ctx.stroke();
+    ctx.beginPath();rounded(ctx,cardX+13,cardTop+13,cardW-26,cardH-26,25);ctx.strokeStyle=isRune?'rgba(187,174,255,.58)':isChampion?'rgba(125,205,245,.62)':'rgba(229,197,126,.55)';ctx.lineWidth=1.5;ctx.stroke();
+    const ix=86,iy=76,is=154;ctx.save();ctx.shadowColor=isRune?'rgba(187,174,255,.48)':isChampion?'rgba(125,205,245,.48)':'rgba(229,197,126,.42)';ctx.shadowBlur=30;ctx.beginPath();rounded(ctx,ix-7,iy-7,is+14,is+14,24);ctx.fillStyle='rgba(6,12,20,.96)';ctx.fill();ctx.restore();
+    ctx.save();ctx.beginPath();rounded(ctx,ix,iy,is,is,19);ctx.clip();const iconBg=ctx.createLinearGradient(ix,iy,ix+is,iy+is);iconBg.addColorStop(0,'#3a536b');iconBg.addColorStop(1,'#111d2a');ctx.fillStyle=iconBg;ctx.fillRect(ix,iy,is,is);ctx.drawImage(icon,ix+5,iy+5,is-10,is-10);ctx.restore();ctx.beginPath();rounded(ctx,ix,iy,is,is,19);ctx.strokeStyle=accent;ctx.lineWidth=2.5;ctx.stroke();
+    const titleX=292,titleMax=1515;let titleSize=68;ctx.textBaseline='alphabetic';ctx.font=`700 ${titleSize}px Georgia`;while(ctx.measureText(entry.name).width>titleMax&&titleSize>42){titleSize-=2;ctx.font=`700 ${titleSize}px Georgia`};ctx.fillStyle='#f4f2ed';ctx.shadowColor='rgba(0,0,0,.4)';ctx.shadowBlur=12;ctx.fillText(entry.name,titleX,139);ctx.shadowBlur=0;
+    ctx.fillStyle=accent;ctx.font='600 29px Arial';
+    let subline=isRune?entry.styleName:isSpell?`Перезарядка: ${entry.cooldownBurn||'—'} сек.`:isChampion?`${state.selectedChampion?.name||''}  ·  ${entry.__label}`:`${(entry.gold.total||0).toLocaleString('ru-RU')} золота   ·   продажа ${(entry.gold.sell||0).toLocaleString('ru-RU')}`;
+    ctx.fillText(subline,titleX,196);
+    const dividerY=264,divider=ctx.createLinearGradient(textX,0,W-textX,0);divider.addColorStop(0,'rgba(190,208,225,.34)');divider.addColorStop(.75,'rgba(190,208,225,.18)');divider.addColorStop(1,'rgba(190,208,225,0)');ctx.beginPath();ctx.moveTo(textX,dividerY);ctx.lineTo(W-textX,dividerY);ctx.strokeStyle=divider;ctx.lineWidth=2;ctx.stroke();
+    if(metaLines.length){ctx.font='700 27px Arial';ctx.textBaseline='alphabetic';metaLines.forEach((line,i)=>{ctx.fillStyle=i===0?'#9adcf9':'#f1d18b';ctx.fillText(line,textX,metaY+i*metaLineHeight)})}
+    ctx.textBaseline='alphabetic';drawRichLayout(ctx,lines,textX,descriptionY,lineHeight,fontSize);ctx.restore();
+    return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Не удалось создать PNG')),'image/png'));
+  }
+  function saveBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1800)}
+  async function downloadOne(){const entry=state.current;if(!entry)return;const btn=$('downloadOne');btn.disabled=true;$('singleStatus').textContent='';try{const blob=await makeCardBlob(entry,state.kind);const prefix=state.kind==='champions'?`${safeFilename(state.selectedChampion?.name||'Champion')}_${entry.__slot}_`:'';saveBlob(blob,`${prefix}${safeFilename(entry.name)}.png`)}catch(e){$('singleStatus').textContent=`Ошибка: ${e.message}`}finally{btn.disabled=false}}
+  async function downloadAbilityVideo(){const entry=state.current;if(!entry?.__videoPath)return;const btn=$('downloadVideo'),url=`https://d28xe8vt774jo5.cloudfront.net/${entry.__videoPath}`;btn.disabled=true;$('singleStatus').textContent='Загружаю исходное видео…';try{const response=await fetch(url);if(!response.ok)throw Error('Сервер не отдал файл');const blob=await response.blob();saveBlob(blob,`${safeFilename(state.selectedChampion?.name||'Champion')}_${entry.__slot}_${safeFilename(entry.name)}.webm`);$('singleStatus').textContent='Видео сохранено в исходном WebM';}catch(e){$('singleStatus').textContent='Не удалось скачать напрямую — открываю оригинальный WebM в новой вкладке.';window.open(url,'_blank','noopener')}finally{btn.disabled=false}}
+  function drawContainedVideo(ctx,video,x,y,maxW,maxH){
+    const vw=video.videoWidth||16,vh=video.videoHeight||9,scale=Math.min(maxW/vw,maxH/vh);
+    const w=vw*scale,h=vh*scale;ctx.drawImage(video,x+(maxW-w)/2,y+(maxH-h)/2,w,h);
+    return {x:x+(maxW-w)/2,y:y+(maxH-h)/2,w,h};
+  }
+  async function downloadAnimatedAbilityCard(){
+    const entry=state.current;
+    if(!entry?.__videoPath)return;
+    const btn=$('downloadAbilityCard'),status=$('singleStatus');btn.disabled=true;
+    let sourceVideo=null,stream=null,recorder=null,raf=0,timer=0;
+    try{
+      if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream)throw Error('Этот браузер не поддерживает запись WebM. Открой сайт в Chrome или Edge.');
+      const url=`https://d28xe8vt774jo5.cloudfront.net/${entry.__videoPath}`;
+      sourceVideo=document.createElement('video');sourceVideo.crossOrigin='anonymous';sourceVideo.muted=true;sourceVideo.playsInline=true;sourceVideo.loop=true;sourceVideo.preload='auto';sourceVideo.src=url;
+      status.textContent='Загружаю видео способности…';
+      await new Promise((resolve,reject)=>{
+        const timeout=setTimeout(()=>reject(Error('Видео слишком долго загружается')),25000);
+        sourceVideo.addEventListener('loadeddata',()=>{clearTimeout(timeout);resolve()},{once:true});
+        sourceVideo.addEventListener('error',()=>{clearTimeout(timeout);reject(Error('Не удалось загрузить видео с источника'))},{once:true});
+        sourceVideo.load();
+      });
+      const iconUrl=`${BASE}/cdn/${state.version}/img/spell/${entry.image.full}`;
+      const abilityIcon=await loadImage(iconUrl);
+      const W=1920,cardX=30,cardTop=26,cardW=W-60;
+      const textX=104,textWidth=1712;
+      const videoTop=258,maxVideoW=1500,maxVideoH=760,panelPad=22;
+      const aspect=(sourceVideo.videoWidth||16)/(sourceVideo.videoHeight||9);
+      let videoW=Math.min(maxVideoW,maxVideoH*aspect),videoH=videoW/aspect;
+      const panelW=videoW+panelPad*2,panelH=videoH+panelPad*2;
+      const panelX=(W-panelW)/2,panelTop=videoTop,videoX=panelX+panelPad,videoY=videoTop+panelPad;
+      const measure=document.createElement('canvas').getContext('2d');
+      const description=entry.__tooltip||'Описание отсутствует.';
+      const descriptionFont=33,descriptionLineHeight=50;
+      const descLines=layoutRichText(measure,description,textWidth,descriptionFont);
+      const descriptionTop=videoTop+panelH+54;
+      const statParts=[];
+      if(entry.__cooldown&&entry.__cooldown!=='—')statParts.push(['ПЕРЕЗАРЯДКА',entry.__cooldown,'#f1ce7f']);
+      if(entry.__resource&&entry.__resource!=='—'&&entry.__resource!=='0')statParts.push(['СТОИМОСТЬ',entry.__resource,'#96dfb2']);
+      if(entry.__range&&entry.__range!=='—'&&entry.__range!=='0')statParts.push(['ДАЛЬНОСТЬ',entry.__range,'#83d7f6']);
+      const descriptionBottom=descriptionTop+Math.max(1,descLines.length)*descriptionLineHeight;
+      const statsTop=descriptionBottom+(statParts.length?42:0);
+      const statsHeight=statParts.length?78:0;
+      const H=Math.max(980,statsTop+statsHeight+72);
+      const cardH=H-52;
+      const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;
+      const ctx=canvas.getContext('2d');
+      const accent='#9adcf9';
+      function drawFrame(){
+        // Ровный chroma-key снаружи. Внутри — полноценная стилистика карточек Rift Items.
+        ctx.fillStyle='#00ff00';ctx.fillRect(0,0,W,H);
+        const body=ctx.createLinearGradient(cardX,cardTop,cardX+cardW,cardTop+cardH);
+        body.addColorStop(0,'#223449');body.addColorStop(.48,'#142233');body.addColorStop(1,'#0d1723');
+        ctx.save();ctx.beginPath();rounded(ctx,cardX,cardTop,cardW,cardH,34);ctx.fillStyle=body;ctx.fill();
+        ctx.save();ctx.beginPath();rounded(ctx,cardX+2,cardTop+2,cardW-4,cardH-4,31);ctx.clip();
+        const halo=ctx.createRadialGradient(340,145,10,340,145,620);halo.addColorStop(0,'rgba(125,205,245,.25)');halo.addColorStop(.55,'rgba(125,205,245,.075)');halo.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=halo;ctx.fillRect(cardX,cardTop,cardW,Math.min(cardH,500));
+        const sheen=ctx.createLinearGradient(0,cardTop,0,cardTop+250);sheen.addColorStop(0,'rgba(255,255,255,.065)');sheen.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=sheen;ctx.fillRect(cardX,cardTop,cardW,250);ctx.restore();
+        ctx.beginPath();rounded(ctx,cardX,cardTop,cardW,cardH,34);ctx.strokeStyle='rgba(178,198,218,.48)';ctx.lineWidth=2;ctx.stroke();
+        ctx.beginPath();rounded(ctx,cardX+13,cardTop+13,cardW-26,cardH-26,25);ctx.strokeStyle='rgba(125,205,245,.62)';ctx.lineWidth=1.5;ctx.stroke();
+        // Иконка и заголовок оформлены так же, как в статичной PNG-карточке.
+        const ix=84,iy=66,is=142;
+        ctx.save();ctx.shadowColor='rgba(125,205,245,.48)';ctx.shadowBlur=30;ctx.beginPath();rounded(ctx,ix-7,iy-7,is+14,is+14,24);ctx.fillStyle='rgba(6,12,20,.96)';ctx.fill();ctx.restore();
+        ctx.save();ctx.beginPath();rounded(ctx,ix,iy,is,is,19);ctx.clip();const iconBg=ctx.createLinearGradient(ix,iy,ix+is,iy+is);iconBg.addColorStop(0,'#3a536b');iconBg.addColorStop(1,'#111d2a');ctx.fillStyle=iconBg;ctx.fillRect(ix,iy,is,is);ctx.drawImage(abilityIcon,ix+5,iy+5,is-10,is-10);ctx.restore();
+        ctx.beginPath();rounded(ctx,ix,iy,is,is,19);ctx.strokeStyle=accent;ctx.lineWidth=2.5;ctx.stroke();
+        const titleX=276,titleMax=1510;let titleSize=70;ctx.textBaseline='alphabetic';ctx.font=`700 ${titleSize}px Georgia`;while(ctx.measureText(entry.name).width>titleMax&&titleSize>42){titleSize-=2;ctx.font=`700 ${titleSize}px Georgia`};ctx.fillStyle='#f4f2ed';ctx.shadowColor='rgba(0,0,0,.4)';ctx.shadowBlur=12;ctx.fillText(entry.name,titleX,126);ctx.shadowBlur=0;
+        ctx.fillStyle=accent;ctx.font='600 28px Arial';ctx.fillText(`${state.selectedChampion?.name||''}  ·  ${entry.__label}`,titleX,177);
+        const divider=ctx.createLinearGradient(textX,0,W-textX,0);divider.addColorStop(0,'rgba(190,208,225,.34)');divider.addColorStop(.75,'rgba(190,208,225,.18)');divider.addColorStop(1,'rgba(190,208,225,0)');ctx.beginPath();ctx.moveTo(textX,225);ctx.lineTo(W-textX,225);ctx.strokeStyle=divider;ctx.lineWidth=2;ctx.stroke();
+        // Видео встроено в панель Rift Items: мягкая подложка, лёгкое свечение и двойной контур.
+        ctx.save();
+        rounded(ctx,panelX,panelTop,panelW,panelH,24);
+        const panelGradient=ctx.createLinearGradient(panelX,panelTop,panelX+panelW,panelTop+panelH);
+        panelGradient.addColorStop(0,'#263d53');panelGradient.addColorStop(.52,'#142435');panelGradient.addColorStop(1,'#0b1520');
+        ctx.shadowColor='rgba(0,0,0,.46)';ctx.shadowBlur=34;ctx.fillStyle=panelGradient;ctx.fill();ctx.shadowBlur=0;
+        ctx.save();rounded(ctx,panelX+3,panelTop+3,panelW-6,panelH-6,21);ctx.clip();
+        const videoGlow=ctx.createRadialGradient(W/2,panelTop+panelH*.25,10,W/2,panelTop+panelH*.35,panelW*.65);
+        videoGlow.addColorStop(0,'rgba(116,194,235,.13)');videoGlow.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=videoGlow;ctx.fillRect(panelX,panelTop,panelW,panelH);
+        drawContainedVideo(ctx,sourceVideo,videoX,videoY,videoW,videoH);
+        ctx.restore();
+        rounded(ctx,panelX,panelTop,panelW,panelH,24);ctx.strokeStyle='rgba(151,195,222,.72)';ctx.lineWidth=2.5;ctx.stroke();
+        rounded(ctx,panelX+9,panelTop+9,panelW-18,panelH-18,17);ctx.strokeStyle='rgba(125,205,245,.26)';ctx.lineWidth=1.4;ctx.stroke();
+        ctx.restore();
+        drawRichLayout(ctx,descLines,textX,descriptionTop,descriptionLineHeight,descriptionFont);
+        if(statParts.length){
+          let x=textX;const y=statsTop;ctx.textBaseline='alphabetic';
+          statParts.forEach(([label,value,color])=>{
+            ctx.font='700 17px Arial';const labelW=ctx.measureText(label).width;
+            ctx.font='700 25px Arial';const valueW=ctx.measureText(value).width;
+            const chipW=labelW+valueW+48,chipH=62;
+            ctx.save();rounded(ctx,x,y,chipW,chipH,10);const chip=ctx.createLinearGradient(x,y,x+chipW,y+chipH);chip.addColorStop(0,'rgba(36,55,73,.96)');chip.addColorStop(1,'rgba(19,32,46,.96)');ctx.fillStyle=chip;ctx.fill();ctx.strokeStyle='rgba(126,155,181,.40)';ctx.lineWidth=1.2;ctx.stroke();ctx.restore();
+            ctx.font='700 15px Arial';ctx.fillStyle='#9db0c4';ctx.fillText(label,x+17,y+23);
+            ctx.font='700 24px Arial';ctx.fillStyle=color;ctx.fillText(value,x+17+labelW+13,y+43);
+            x+=chipW+16;
+          });
+        }
+        ctx.restore();
+      }
+      drawFrame();
+      stream=canvas.captureStream(30);
+      const types=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+      const mime=types.find(t=>MediaRecorder.isTypeSupported(t));
+      if(!mime)throw Error('В браузере нет доступного WebM-кодека');
+      const chunks=[];recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:10000000});
+      const finished=new Promise((resolve,reject)=>{recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};recorder.onerror=()=>reject(Error('Ошибка записи видео-карточки'));recorder.onstop=()=>resolve(new Blob(chunks,{type:mime}))});
+      await sourceVideo.play();recorder.start(500);status.textContent='Записываю видео-карточку в стиле Rift Items…';
+      const duration=Math.min(Math.max(Number.isFinite(sourceVideo.duration)?sourceVideo.duration:6,4),18);
+      const paint=()=>{drawFrame();raf=requestAnimationFrame(paint)};raf=requestAnimationFrame(paint);
+      await new Promise(resolve=>{timer=setTimeout(resolve,duration*1000)});
+      cancelAnimationFrame(raf);sourceVideo.pause();recorder.stop();
+      const blob=await finished;
+      if(!blob.size)throw Error('Не удалось создать видео-файл');
+      saveBlob(blob,`${safeFilename(state.selectedChampion?.name||'Champion')}_${entry.__slot}_${safeFilename(entry.name)}_rift_card.webm`);
+      status.textContent='Готово · видео встроено в стилизованную панель Rift Items на зелёном фоне для Ultra Key';
+    }catch(e){status.textContent=`Не удалось создать видео-карточку: ${e.message}`}
+    finally{if(timer)clearTimeout(timer);if(raf)cancelAnimationFrame(raf);if(recorder&&recorder.state!=='inactive'){try{recorder.stop()}catch{}}if(stream)stream.getTracks().forEach(t=>t.stop());if(sourceVideo){sourceVideo.pause();sourceVideo.removeAttribute('src');sourceVideo.load()}btn.disabled=false}
+  }
+  async function downloadAll(){
+    const btn=$('downloadAll'),data=currentData(),kind=state.kind;if(!data.length)return;
+    if(!window.JSZip){$('status').textContent='ZIP-модуль не загрузился. Проверь интернет и обнови страницу.';return}
+    btn.disabled=true;
+    try{const zip=new JSZip(),folder=zip.folder(kind==='items'?'Предметы':kind==='runes'?'Руны':kind==='spells'?'Заклинания':`Способности_${safeFilename(state.selectedChampion?.name||'Чемпион')}`);
+      for(let i=0;i<data.length;i++){$('status').textContent=`Создание PNG: ${i+1} / ${data.length}`;const blob=await makeCardBlob(data[i],kind);const prefix=kind==='runes'?`${safeFilename(data[i].styleName)}_`:'';folder.file(`${String(i+1).padStart(3,'0')}_${prefix}${safeFilename(data[i].name)}.png`,blob)}
+      $('status').textContent='Сборка ZIP…';const zipBlob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:4}});const zipName=kind==='items'?`LoL_items_${state.version}.zip`:kind==='runes'?`LoL_runes_${state.version}.zip`:kind==='spells'?`LoL_spells_${state.version}.zip`:`LoL_${safeFilename(state.selectedChampion?.name||'champion')}_abilities.zip`;saveBlob(zipBlob,zipName);$('status').textContent=`Готово · ${data.length} PNG`;
+    }catch(e){$('status').textContent=`Не удалось собрать архив: ${e.message}`}finally{btn.disabled=false;renderFilters();}
+  }
+  function switchKind(kind){state.kind=kind;state.filter='all';state.selectedChampion=null;state.championAbilities=[];$('search').value='';document.querySelectorAll('#mainTabs button').forEach(b=>b.classList.toggle('active',b.dataset.kind===kind));renderFilters();render()}
+  $('mainTabs').addEventListener('click',e=>{const b=e.target.closest('[data-kind]');if(b)switchKind(b.dataset.kind)});
+  $('filters').addEventListener('click',e=>{const b=e.target.closest('[data-filter]');if(!b)return;state.filter=b.dataset.filter;renderFilters();render()});
+  $('search').addEventListener('input',render);$('sort').addEventListener('change',render);$('downloadOne').addEventListener('click',downloadOne);$('downloadVideo').addEventListener('click',downloadAbilityVideo);$('downloadAbilityCard').addEventListener('click',downloadAnimatedAbilityCard);$('downloadAll').addEventListener('click',downloadAll);
+  function close(){ $('modalVideo').pause();$('overlay').classList.remove('open');$('modal').classList.remove('ability-mode') }$('close').addEventListener('click',close);$('overlay').addEventListener('click',e=>{if(e.target===$('overlay'))close()});document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+  async function init(){
+    try{const versions=await fetch(`${BASE}/api/versions.json`).then(r=>{if(!r.ok)throw Error('Версии недоступны');return r.json()});state.version=versions[0];
+      const [itemResult,runeResult,spellResult,championResult]=await Promise.allSettled([
+        fetch(`${BASE}/cdn/${state.version}/data/${LOCALE}/item.json`).then(r=>{if(!r.ok)throw Error('Предметы недоступны');return r.json()}),
+        fetch(`${BASE}/cdn/${state.version}/data/${LOCALE}/runesReforged.json`).then(r=>{if(!r.ok)throw Error('Руны недоступны');return r.json()}),
+        fetch(`${BASE}/cdn/${state.version}/data/${LOCALE}/summoner.json`).then(r=>{if(!r.ok)throw Error('Заклинания недоступны');return r.json()}),
+        fetch(`${BASE}/cdn/${state.version}/data/${LOCALE}/champion.json`).then(r=>{if(!r.ok)throw Error('Список чемпионов недоступен');return r.json()})
+      ]);
+      if(itemResult.status==='fulfilled'){
+        const candidates=Object.entries(itemResult.value.data).map(([id,it])=>({...it,__id:String(id)})).filter(isCurrentRiftItem);
+        state.items=uniqueItems(candidates);
+      }
+      if(runeResult.status==='fulfilled'){
+        state.runeStyles=runeResult.value;
+        state.runes=runeResult.value.flatMap(style=>style.slots.flatMap((slot,index)=>slot.runes.map(r=>({...r,styleId:style.id,styleName:style.name,styleIcon:style.icon,slotIndex:index}))));
+      }else state.runeStyles=[];
+      if(spellResult.status==='fulfilled'){
+        state.spells=Object.entries(spellResult.value.data).filter(([id])=>CLASSIC_SPELL_IDS.has(id)).map(([id,spell])=>({...spell,__id:id})).filter(spell=>spell.name&&spell.image?.full).sort((a,b)=>a.name.localeCompare(b.name,'ru'));
+      }
+      if(championResult.status==='fulfilled')state.champions=Object.values(championResult.value.data).map(ch=>({...ch,__kind:'champion'})).sort((a,b)=>a.name.localeCompare(b.name,'ru'));
+      if(!state.items.length&&!state.runes.length&&!state.spells.length&&!state.champions.length)throw Error('Не удалось загрузить данные');
+      renderFilters();render();
+      if(itemResult.status==='rejected'||runeResult.status==='rejected'||spellResult.status==='rejected'||championResult.status==='rejected')$('status').textContent='Часть данных временно недоступна';
+    }catch(e){$('status').textContent=`Не удалось загрузить данные: ${e.message}`;$('grid').innerHTML='<div class="empty">Проверь подключение к интернету и обнови страницу</div>'}
+  }
+  init();
+})();
+</script>
+</body>
+</html>
